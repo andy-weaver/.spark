@@ -20,35 +20,44 @@
 #   (password is "root")
 # -----------------------------------------------------------------------------
 
-FROM ubuntu:20.04
+FROM apache/spark:3.5.4-scala2.12-java17-python3-r-ubuntu
 
 # Avoid interactive prompts during build
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install as root
+USER root
+
+# Set the working directory
+RUN mkdir -p /spark
+WORKDIR /spark
+
+# Copy the pyproject.toml and .python-version files to the container
+COPY pyproject.toml /spark/pyproject.toml
+COPY .python-version /spark/.python-version
+
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    openjdk-11-jdk \
-    python3 \
-    python3-pip \
-    scala \
-    git \
-    curl \
-    openssh-server \
-    vim \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get full-upgrade -y && \
+    apt-get install -y \
+        openjdk-11-jdk \
+        python3 \
+        python3-pip \
+        scala \
+        git \
+        curl \
+        openssh-server \
+        vim \
+        zsh \
+        wget && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install uv as the Python package manager
 RUN pip3 install uv
 
-# Install Apache Spark (version 3.3.1 with Hadoop 3 support)
-ENV SPARK_VERSION=3.3.1
-ENV HADOOP_VERSION=3
-ENV SPARK_PACKAGE=spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}
-RUN curl -fSL "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/${SPARK_PACKAGE}.tgz" -o /tmp/spark.tgz \
-    && tar -xzf /tmp/spark.tgz -C /opt/ \
-    && rm /tmp/spark.tgz
-ENV SPARK_HOME=/opt/${SPARK_PACKAGE}
-ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+# Set up the Python environment
+RUN python3 -m uv sync
 
 # Configure SSH
 RUN mkdir /var/run/sshd \
@@ -56,8 +65,29 @@ RUN mkdir /var/run/sshd \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
+# Generate SSH keys
+RUN ssh-keygen -A
+
 # Expose SSH port
 EXPOSE 22
+
+# Set up the Spark environment
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
+
+# Clean up
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# # Copy .bashrc to the /root directory
+# COPY .bashrc /root/.bashrc
+
+# Set up the Spark environment
+RUN SPARK_DIR=$(find / -type d -name "spark-*" 2>/dev/null | head -n 1) && \
+    echo "export SPARK_HOME=$SPARK_DIR" >> /etc/profile && \
+    echo "export PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH" >> /etc/profile && \
+    echo "export PATH=/opt/spark/bin:/opt/spark/sbin:$PATH" >> /etc/profile
+
 
 # Default command: run SSH server in the foreground
 CMD ["/usr/sbin/sshd", "-D"]
