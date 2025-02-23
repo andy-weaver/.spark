@@ -12,9 +12,6 @@
 # To build:
 #   docker build -t spark-dev .
 #
-# To run (and expose SSH on port 2222 for example):
-#   docker run -d -p 2222:22 spark-dev
-#
 # SSH into the container with:
 #   ssh root@localhost -p 2222
 #   (password is "root")
@@ -39,8 +36,8 @@ RUN mkdir -p /app && \
 WORKDIR /app
 
 # Copy the pyproject.toml and .python-version files to the container
-COPY ~/dev/.spark/pyproject.toml /app/pyproject.toml
-COPY ~/dev/.spark/.python-version /app/.python-version
+COPY pyproject.toml /app/pyproject.toml
+COPY .python-version /app/.python-version
 
 # Install system dependencies
 RUN apt-get update && \
