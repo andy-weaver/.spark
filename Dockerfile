@@ -28,13 +28,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install as root
 USER root
 
-# Set the working directory
-RUN mkdir -p /spark
-WORKDIR /spark
+# Set the working directory and subdirectories
+RUN mkdir -p /app && \
+    mkdir -p /app/data && \
+    mkdir -p /app/db && \
+    mkdir -p /app/notebooks && \
+    mkdir -p /app/scripts
+
+# Set the working directory to /app
+WORKDIR /app
 
 # Copy the pyproject.toml and .python-version files to the container
-COPY pyproject.toml /spark/pyproject.toml
-COPY .python-version /spark/.python-version
+COPY ~/dev/.spark/pyproject.toml /app/pyproject.toml
+COPY ~/dev/.spark/.python-version /app/.python-version
 
 # Install system dependencies
 RUN apt-get update && \
@@ -73,20 +79,27 @@ EXPOSE 22
 
 # Set up the Spark environment
 ENV SPARK_HOME=/opt/spark
+ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
 
 # Clean up
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# # Copy .bashrc to the /root directory
-# COPY .bashrc /root/.bashrc
-
 # Set up the Spark environment
 RUN SPARK_DIR=$(find / -type d -name "spark-*" 2>/dev/null | head -n 1) && \
     echo "export SPARK_HOME=$SPARK_DIR" >> /etc/profile && \
     echo "export PATH=$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH" >> /etc/profile && \
     echo "export PATH=/opt/spark/bin:/opt/spark/sbin:$PATH" >> /etc/profile
+
+# Set the default shell to zsh
+RUN chsh -s /usr/bin/zsh root && \
+    echo "export PATH=$PATH" >> /root/.zshrc && \
+    echo "export SPARK_HOME=/opt/spark" >> /root/.zshrc && \
+    echo "export JAVA_HOME=/opt/java/openjdk" >> /root/.zshrc
+
+# Set the default shell to zsh
+SHELL ["/usr/bin/zsh", "-c"]
 
 
 # Default command: run SSH server in the foreground

@@ -4,6 +4,12 @@ services:
     container_name: spark-dev
     ports:
       - "2222:22"
+    environment:
+      - JAVA_HOME=/opt/java/openjdk
+      - SPARK_HOME=/opt/spark
+    volumes:
+      - ./:/app
+      - ./data:/data
     deploy:
       resources:
         limits:
@@ -12,3 +18,16 @@ services:
         reservations:
           cpus: "8.0"
           memory: "16g"
+
+  postgres:
+    image: postgres:12
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./db:/var/lib/postgresql/data
+
