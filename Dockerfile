@@ -41,8 +41,6 @@ COPY .python-version /app/.python-version
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get full-upgrade -y && \
     apt-get install -y \
         openjdk-11-jdk \
         python3 \
