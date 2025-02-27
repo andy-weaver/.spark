@@ -1,15 +1,13 @@
 services:
   spark:
-    image: spark-dev
+    image: andyandyandyandy2023/spark-dev:latest
     container_name: spark-dev
     ports:
       - "2222:22"
-    environment:
-      - JAVA_HOME=/opt/java/openjdk
-      - SPARK_HOME=/opt/spark
     volumes:
-      - ./:/app
-      - ./data:/data
+      - app:/app
+    networks:
+      - spark-network
     deploy:
       resources:
         limits:
@@ -29,5 +27,26 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - spark-network
+    command: postgres -c max_connections=300
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - spark-network
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=mail@mail.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+
+networks:
+  spark-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  app: 

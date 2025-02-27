@@ -25,19 +25,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install as root
 USER root
 
-# Set the working directory and subdirectories
-RUN mkdir -p /app && \
-    mkdir -p /app/data && \
-    mkdir -p /app/db && \
-    mkdir -p /app/notebooks && \
-    mkdir -p /app/scripts
-
 # Set the working directory to /app
 WORKDIR /app
 
 # Copy the pyproject.toml and .python-version files to the container
 COPY pyproject.toml /app/pyproject.toml
 COPY .python-version /app/.python-version
+COPY .gitignore /app/.gitignore
 
 # Install system dependencies
 RUN apt-get update && \
